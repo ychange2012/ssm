@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="menu">
+	<sql id="AllWhere">
+		<if test="ID != null">  
+	           AND ID = #{ID} 
+	    </if>
+	    <if test="MENU_NAME != null">  
+	           AND MENU_NAME like CONCAT('%',#{MENU_NAME} ,'%') 
+	    </if> 
+	    <if test="MENU_PRICE != null">  
+	           AND MENU_PRICE = #{MENU_PRICE} 
+	    </if> 
+	    <if test="TYPE != null">  
+	           AND TYPE = #{TYPE} 
+	    </if> 
+	    <if test="MENU_COST != null">  
+	           AND MENU_COST = #{MENU_COST} 
+	    </if> 
+	     <if test="PIC_URL != null">  
+	           AND PIC_URL = #{PIC_URL} 
+	    </if>  
+	     <if test="PIC_URL_S != null">  
+	           AND PIC_URL_S = #{PIC_URL_S} 
+	    </if>
+	     <if test="IS_DELETE != null">  
+	           AND IS_DELETE = #{IS_DELETE} 
+	    </if>
+	</sql>
+	<sql id="pageSelect">
+	    <if test="START != null">
+	    	<if test="LIMIT != null">  
+	           LIMIT ${START},${LIMIT}
+	         </if>
+	    </if> 
+	</sql>
+	
+	<insert id="insert">
+		INSERT INTO tb_menu
+		(ID,MENU_NAME,MENU_PRICE,MENU_DES,MENU_COST,IS_DELETE,PIC_URL,PIC_URL_S,TYPE) 
+		values 
+		(null,#{MENU_NAME},#{MENU_PRICE},#{MENU_DES},#{MENU_COST},'0',#{PIC_URL},#{PIC_URL_S},#{TYPE})
+	</insert>
+	
+	<select id="query" resultType="HashMap">
+		SELECT ID,MENU_NAME,MENU_PRICE,MENU_DES,MENU_COST,PIC_URL,PIC_URL_S,TYPE,
+		(SELECT TYPE_NAME FROM tb_typeconf WHERE  ID=T.TYPE) TYPE_NAME,
+		(SELECT COUNT(*) FROM tb_order_detail WHERE MENU_ID = T.ID ) COUNT,
+		if(isnull(FORMAT((SELECT avg(SCORE) FROM tb_order_detail WHERE MENU_ID = T.ID ),1)),0,FORMAT((SELECT avg(SCORE) FROM tb_order_detail WHERE MENU_ID = T.ID ),1)) AVG_SCORE
+		FROM tb_menu t
+		WHERE 1=1
+		<include refid="AllWhere"/>
+		ORDER BY ID
+		<include refid="pageSelect"/>
+	</select>
+	
+	<select id="queryCount" resultType="HashMap">
+		SELECT ID
+		FROM tb_menu
+		WHERE 1=1
+		<include refid="AllWhere"/>
+	</select>
+	
+	<update id="update">
+		UPDATE tb_menu
+		<set>  
+        <if test="MENU_NAME != null">  
+            MENU_NAME = #{MENU_NAME},  
+        </if>
+        <if test="MENU_PRICE != null">  
+            MENU_PRICE = #{MENU_PRICE},  
+        </if> 
+        <if test="MENU_DES != null">  
+            MENU_DES = #{MENU_DES},  
+        </if> 
+        <if test="MENU_COST != null">  
+            MENU_COST = #{MENU_COST},  
+        </if>   
+        <if test="PIC_URL != null">  
+            PIC_URL = #{PIC_URL},  
+        </if>
+        <if test="PIC_URL_S != null">  
+            PIC_URL_S = #{PIC_URL_S},  
+        </if>
+        <if test="TYPE != null">  
+            TYPE = #{TYPE},  
+        </if>
+        <if test="IS_DELETE != null">  
+            IS_DELETE = #{IS_DELETE},  
+        </if> 
+    	</set>  
+		WHERE ID = #{ID}
+	</update>
+</mapper>

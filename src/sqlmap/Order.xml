@@ -1,0 +1,244 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="order">
+
+
+	<sql id="AllWhere">
+		<if test="ID != null">  
+	           AND ID = #{ID} 
+	    </if>
+	    <if test="ORDER_ID != null">  
+	           AND ORDER_ID = #{ORDER_ID} 
+	    </if> 
+	     <if test="CLIENT_TEL != null">  
+	           AND CLIENT_TEL = #{CLIENT_TEL} 
+	    </if> 
+	    <if test="IS_COOK != null">  
+	           AND IS_COOK = #{IS_COOK} 
+	    </if>
+	    <if test="TABLE_NAME != null">  
+	           AND TABLE_NAME = #{TABLE_NAME} 
+	    </if>
+	    <if test="STATUS != null">  
+	           AND STATUS = #{STATUS} 
+	    </if>
+	     <if test="NOT_NUll != null">  
+	           AND CLIENT_TEL is not null 
+	    </if>
+	    <if test="TIMESTRBEGIN != null">  
+	    	<if test="TIMESTREND != null">  
+	    	 <![CDATA[
+	          AND #{TIMESTREND}>ORDER_TIME and #{TIMESTRBEGIN}<ORDER_TIME
+	           ]]>
+	    	</if> 
+	    </if> 
+	</sql>
+	<sql id="pageSelect">
+	    <if test="START != null">
+	    	<if test="LIMIT != null">  
+	           LIMIT ${START},${LIMIT}
+	         </if>
+	    </if> 
+	</sql>
+	
+	
+	
+	<insert id="insertOrder" useGeneratedKeys="true" keyProperty="id" >
+	INSERT INTO tb_order
+	(ID,TABLE_ID,CREATE_TIME,ORDER_TIME,CLIENT_TEL,STATUS)
+	values
+	(null,#{TABLE_ID},sysdate(),#{ORDER_TIME},#{CLIENT_TEL},'1')
+	</insert>
+	
+	<update id="updateOrder">
+		UPDATE tb_order
+		<set>  
+        <if test="TABLE_ID != null">  
+            TABLE_ID = #{TABLE_ID},  
+        </if>  
+        <if test="CREATE_TIME != null">  
+            CREATE_TIME = sysdate(),  
+        </if>
+        <if test="CLIENT_TEL != null">  
+            CLIENT_TEL = #{CLIENT_TEL},  
+        </if>
+        <if test="STATUS != null">  
+            STATUS = #{STATUS},  
+        </if>
+    	</set>  
+		WHERE ID = #{ID}
+	</update>
+	
+	<update id="updateDetail">
+		UPDATE tb_order_detail
+		<set>  
+        <if test="TABLE_ID != null">  
+            TABLE_ID = #{TABLE_ID},  
+        </if>  
+        <if test="CREATE_TIME != null">  
+            ORDER_ID =#{ORDER_ID},  
+        </if>
+        <if test="REMARK != null">  
+            REMARK = #{REMARK},  
+        </if>
+        <if test="IS_COOK != null">  
+            IS_COOK = #{IS_COOK},  
+        </if>
+        <if test="SCORE != null">  
+            SCORE = #{SCORE},  
+        </if>
+        <if test="STATUS != null">
+            STATUS = #{STATUS}
+        </if>
+    	</set>  
+		WHERE ID = #{ID}
+	</update>
+	
+	<select id="queryOrder">
+		SELECT ID,TABLE_ID,CREATE_TIME,ORDER_TIME,CLIENT_TEL,STATUS
+		FROM tb_order
+		WHERE 1=1
+		<include refid="AllWhere"/>
+		ORDER BY CREATE_TIME DESC
+		<include refid="pageSelect"/>
+	</select>
+	
+	<select id="queryDetail" resultType="HashMap">
+		SELECT ID,MENU_ID,
+		MENU_NAME,
+		PRICE,
+		date_format(CREATE_TIME,'%Y-%m-%d %T') CREATE_TIME,
+		date_format(ORDER_TIME,'%Y-%m-%d %T') ORDER_TIME,
+		TABLE_NAME,
+		ORDER_ID,SCORE,REMARK,COUNT,IS_COOK
+		FROM tb_order_detail_v
+		WHERE 1=1
+		<include refid="AllWhere"/>
+		ORDER BY CREATE_TIME
+		<include refid="pageSelect"/>
+	</select>
+	
+	<insert id="insertDetail">
+	INSERT INTO tb_order_detail
+	(ID,MENU_ID,SCORE,ORDER_ID,REMARK,COUNT,IS_COOK)
+	values
+	(null,#{MENU_ID},'10',#{ORDER_ID},#{REMARK},#{COUNT},'0')
+	</insert>
+	
+	<select id="queryTest" resultType="HashMap">
+		SELECT T.ID,
+		T.NAME,
+		date_format(T.DATE,'%Y-%m-%d %T') DATE
+		FROM tb_test T
+		WHERE 1=1
+		<include refid="AllWhere"/>
+	</select>
+	
+	<!-- 扫描无效订单 -->
+	<update id="scanfOrder">
+		UPDATE tb_order A SET A.STATUS='0' 
+		WHERE A.ID in(
+		SELECT B.ID FROM (
+		SELECT T.ID FROM tb_order T WHERE ((UNIX_TIMESTAMP(NOW())-UNIX_TIMESTAMP(T.ORDER_TIME))/60)>15 and T.STATUS='1'
+		) B
+		)
+	</update>
+	
+	<!-- 查询所有的订单 -->
+	<select id="queryHistoryOrder" resultType="HashMap">
+		SELECT ID,TABLE_NAME,
+		date_format(CREATE_TIME,'%Y-%m-%d %T') CREATE_TIME,
+		date_format(ORDER_TIME,'%Y-%m-%d %T') ORDER_TIME,
+		CLIENT_TEL,STATUS,
+		IFNULL(USER_NAME,"")USER_NAME,
+		IFNULL(TOTAL,0) TOTAL
+		FROM tb_order_v2
+		WHERE 1=1
+		<include refid="AllWhere"/>
+		ORDER BY CREATE_TIME
+		<include refid="pageSelect"/>
+	</select>
+	
+	<select id="queryHistoryCount" resultType="HashMap">
+		SELECT ID FROM tb_order_v2 T
+		WHERE 1=1
+		<include refid="AllWhere"/>
+	</select>
+	
+	<!-- 统计当年所有月份订单数目 -->
+	<select id="queryOrderCount" resultType="HashMap">
+	SELECT (SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=1) count1,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=2) count2,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=3) count3,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=4) count4,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=5) count5,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=6) count6,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=7) count7,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=8) count8,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=9) count9,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=10) count10,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=11) count11,
+			(SELECT COUNT(*) count FROM `tb_order`WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=12) count12
+	FROM DUAL
+	</select>
+	
+	<!-- 统计近5年销售总金额 -->
+	<select id="queryTotalPrice" resultType="HashMap">
+	SELECT
+	IFNULL((SELECT SUM(TOTALPRICE) PROFIT FROM tb_order_v  WHERE DATE_FORMAT(ORDER_TIME,'%Y')=(DATE_FORMAT(NOW(),'%Y')-4)),0) count1,
+	IFNULL((SELECT SUM(TOTALPRICE) PROFIT FROM tb_order_v  WHERE DATE_FORMAT(ORDER_TIME,'%Y')=(DATE_FORMAT(NOW(),'%Y')-3)),0) count2,
+	IFNULL((SELECT SUM(TOTALPRICE) PROFIT FROM tb_order_v  WHERE DATE_FORMAT(ORDER_TIME,'%Y')=(DATE_FORMAT(NOW(),'%Y')-2)),0) count3,
+	IFNULL((SELECT SUM(TOTALPRICE) PROFIT FROM tb_order_v  WHERE DATE_FORMAT(ORDER_TIME,'%Y')=(DATE_FORMAT(NOW(),'%Y')-1)),0) count4,
+	IFNULL((SELECT SUM(TOTALPRICE) PROFIT FROM tb_order_v  WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y')),0) count5
+	from DUAL
+	</select>
+	
+	<!-- 统计近5年总利润 -->
+	<select id="queryTotalProfit" resultType="HashMap">
+	SELECT
+	IFNULL((SELECT SUM((TOTALPRICE-TOTALCOST)) PROFIT FROM tb_order_v  WHERE DATE_FORMAT(ORDER_TIME,'%Y')=(DATE_FORMAT(NOW(),'%Y')-4)),0) count1,
+	IFNULL((SELECT SUM((TOTALPRICE-TOTALCOST)) PROFIT FROM tb_order_v  WHERE DATE_FORMAT(ORDER_TIME,'%Y')=(DATE_FORMAT(NOW(),'%Y')-3)),0) count2,
+	IFNULL((SELECT SUM((TOTALPRICE-TOTALCOST)) PROFIT FROM tb_order_v  WHERE DATE_FORMAT(ORDER_TIME,'%Y')=(DATE_FORMAT(NOW(),'%Y')-2)),0) count3,
+	IFNULL((SELECT SUM((TOTALPRICE-TOTALCOST)) PROFIT FROM tb_order_v  WHERE DATE_FORMAT(ORDER_TIME,'%Y')=(DATE_FORMAT(NOW(),'%Y')-1)),0) count4,
+	IFNULL((SELECT SUM((TOTALPRICE-TOTALCOST)) PROFIT FROM tb_order_v  WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y')),0) count5
+	from DUAL
+	</select>
+	
+	<!-- 统计当月各类菜式销量占比 -->
+	<select id="queryTypePercent" resultType="HashMap">
+	SELECT
+	T.ID,
+	T.TYPE_NAME,
+	(
+		(
+			SELECT
+				SUM(count)
+			FROM
+				tb_order_detail D
+			WHERE
+				D.MENU_ID IN (
+					SELECT
+						M.ID
+					FROM
+						tb_menu M
+					WHERE
+						M.TYPE = T.ID
+				) AND D.ORDER_ID IN (SELECT ID FROM tb_order WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=DATE_FORMAT(NOW(),'%m'))
+		) / (
+			SELECT
+				SUM(count)
+			FROM
+				tb_order_detail O
+			WHERE O.ORDER_ID IN
+				(SELECT ID FROM tb_order WHERE DATE_FORMAT(ORDER_TIME,'%Y')=DATE_FORMAT(NOW(),'%Y') and DATE_FORMAT(ORDER_TIME,'%m')=DATE_FORMAT(NOW(),'%m'))
+		)*100
+	) PERCENT
+	FROM
+		tb_typeconf T
+	</select>
+	
+</mapper>
+
+

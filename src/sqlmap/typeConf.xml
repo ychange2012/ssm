@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="typeConf">
+	<sql id="AllWhere">
+		<if test="ID != null">  
+	           AND ID = #{ID} 
+	    </if>
+	 </sql>
+
+	<insert id="insert" useGeneratedKeys="true" keyProperty="id" >
+	INSERT INTO tb_typeconf
+	(ID,TYPE_NAME)
+	values
+	(null,#{TYPE_NAME})
+	</insert>
+	
+	<delete id="delete">
+	DELETE FROM tb_typeconf WHERE ID=#{ID}
+	</delete>
+	
+	<update id="update">
+		UPDATE tb_typeconf
+		<set>  
+         <if test="TYPE_NAME != null">  
+            TYPE_NAME = #{TYPE_NAME},  
+        </if>  
+    	</set>  
+		WHERE ID = #{ID}
+	</update>
+	
+	<select id="query" resultType="HashMap">
+		SELECT ID,TYPE_NAME
+		FROM tb_typeconf
+		WHERE 1=1
+		<include refid="AllWhere"/>
+	</select>
+</mapper>
+
+

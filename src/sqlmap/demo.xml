@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="test">
+
+
+	<sql id="AllWhere">
+	<if test="ID != null">  
+           AND ID = #{ID} 
+        </if> 
+	</sql>
+	
+	
+	
+	<select id="findUserById" parameterType="int" resultType="com.demo.model.User">
+		SELECT * FROM STU WHERE id=#{value}
+	</select>
+	
+	<insert id="insert">
+	INSERT INTO STU (username) values (#{username})
+	</insert>
+	
+	
+	<!-- 测试 -->
+	<insert id="insertTest" useGeneratedKeys="true" keyProperty="id" >
+	INSERT INTO tb_test
+	(ID,NAME,DATE)
+	values
+	(null,#{NAME},sysdate())
+	</insert>
+	
+	<delete id="deleteTest">
+	DELETE FROM tb_test WHERE ID=#{ID}
+	</delete>
+	
+	<update id="updateTest">
+		UPDATE tb_test
+		<set>  
+        <if test="NAME != null">  
+            NAME = #{NAME},  
+        </if>  
+        <if test="DATE != null">  
+            DATE = #{DATE},  
+        </if>  
+    	</set>  
+		WHERE ID = #{ID}
+	</update>
+	
+	<select id="queryTest" resultType="HashMap">
+		SELECT T.ID,
+		T.NAME,
+		date_format(T.DATE,'%Y-%m-%d %T') DATE
+		FROM tb_test T
+		WHERE 1=1
+		<include refid="AllWhere"/>
+	</select>
+</mapper>
+
+

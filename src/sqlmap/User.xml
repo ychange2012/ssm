@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="user">
+	<sql id="AllWhere">
+		<if test="ID != null">  
+	           AND ID = #{ID} 
+	    </if>
+	    <if test="USERNAME != null">  
+	           AND USERNAME like CONCAT('%',#{USERNAME},'%') 
+	    </if> 
+	    <if test="ACCOUNT != null">  
+	           AND ACCOUNT = #{ACCOUNT} 
+	    </if> 
+	    <if test="PASSWORD != null">  
+	           AND PASSWORD = #{PASSWORD} 
+	    </if> 
+	    <if test="FLAG != null">  
+	           AND FLAG = #{FLAG} 
+	    </if> 
+	     <if test="TEL != null">  
+	           AND TEL = #{TEL} 
+	    </if>  
+	     <if test="IS_DELETE != null">  
+	           AND IS_DELETE = #{IS_DELETE} 
+	    </if> 
+	</sql>
+	
+	<sql id="pageSelect">
+	    <if test="START != null">
+	    	<if test="LIMIT != null">  
+	           LIMIT ${START},${LIMIT}
+	         </if>
+	    </if> 
+	</sql>
+	
+	<insert id="insert">
+		INSERT INTO tb_user
+		(ID,USERNAME,ACCOUNT,PASSWORD,FLAG,TEL,IS_DELETE) 
+		values 
+		(null,#{USERNAME},#{ACCOUNT},#{PASSWORD},#{FLAG},#{TEL},'0')
+	</insert>
+	
+	<select id="query" resultType="com.demo.model.User">
+		SELECT ID,USERNAME,ACCOUNT,PASSWORD,FLAG,TEL 
+		FROM tb_user
+		WHERE 1=1
+		<include refid="AllWhere"/>
+		ORDER BY FLAG
+		<include refid="pageSelect"/>
+	</select>
+	
+	<select id="queryCount" resultType="com.demo.model.User" >
+		SELECT ID 
+		FROM tb_user
+		WHERE 1=1
+		<include refid="AllWhere"/>
+	</select>
+	
+	<update id="update">
+		UPDATE tb_user
+		<set>  
+        <if test="USERNAME != null">  
+            USERNAME = #{USERNAME},  
+        </if>  
+        <if test="ACCOUNT != null">  
+            ACCOUNT = #{ACCOUNT},  
+        </if>
+        <if test="PASSWORD != null">  
+            PASSWORD = #{PASSWORD},  
+        </if>
+        <if test="FLAG != null">  
+            FLAG = #{FLAG},  
+        </if>
+        <if test="TEL != null">  
+            TEL = #{TEL},  
+        </if> 
+        <if test="IS_DELETE != null">  
+            IS_DELETE = #{IS_DELETE},  
+        </if>  
+    	</set>  
+		WHERE ID = #{ID}
+	</update>
+</mapper>

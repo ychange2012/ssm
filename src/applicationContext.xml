@@ -1,0 +1,132 @@
+<beans xmlns="http://www.springframework.org/schema/beans"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" 
+	xmlns:mvc="http://www.springframework.org/schema/mvc"
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:aop="http://www.springframework.org/schema/aop" 
+	xmlns:tx="http://www.springframework.org/schema/tx"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+		http://www.springframework.org/schema/beans/spring-beans.xsd 
+		http://www.springframework.org/schema/mvc 
+		http://www.springframework.org/schema/mvc/spring-mvc.xsd 
+		http://www.springframework.org/schema/context 
+		http://www.springframework.org/schema/context/spring-context.xsd 
+		http://www.springframework.org/schema/aop 
+		http://www.springframework.org/schema/aop/spring-aop.xsd 
+		http://www.springframework.org/schema/tx 
+		http://www.springframework.org/schema/tx/spring-tx.xsd ">
+
+<bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor"/>  
+	<!-- 加载配置文件 -->
+	<context:property-placeholder location="classpath:db.properties" />
+
+	<!-- 数据源，使用dbcp -->
+	<bean id="dataSource" class="org.apache.commons.dbcp.BasicDataSource"
+		destroy-method="close">
+		<property name="driverClassName" value="${jdbc.driver}" />
+		<property name="url" value="${jdbc.url}" />
+		<property name="username" value="${jdbc.username}" />
+		<property name="password" value="${jdbc.password}" />
+		<property name="maxActive" value="10" />
+		<property name="maxIdle" value="5" />
+	</bean>
+
+
+	<!-- sqlSessinFactory -->
+	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">
+		<!-- 加载mybatis的配置文件-->
+		<!--  <property name="configLocation" value="classpath:mybatis/SqlMapConfig.xml" />-->
+		<property name="mapperLocations"   value="classpath*:sqlmap/*.xml" /> 
+		<!-- 数据源 -->
+		<property name="dataSource" ref="dataSource" />
+	</bean>
+	
+	<bean id="sqlSessionTemplate" class="org.mybatis.spring.SqlSessionTemplate">    
+	<constructor-arg index="0" ref="sqlSessionFactory" />  
+	</bean>
+	
+	<!-- 原始dao接口 -->
+	<bean id="userDao" class="com.demo.dao.UserDaoImpl" >
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="menuDao" class="com.demo.dao.MenuDaoImpl" >
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="sysConfDao" class="com.demo.dao.SysConfDaoImpl" >
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="orderDao" class="com.demo.dao.OrderDaoImpl" >
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="tableDao" class="com.demo.dao.TableDaoImpl" >
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	<bean id="messageDao" class="com.demo.dao.MessageDaoImpl" >
+		<property name="sqlSessionTemplate" ref="sqlSessionTemplate"/>
+	</bean>
+	
+	
+	
+	<bean id="baseService" class="com.demo.service.BaseService" >
+	<property name="userDao" ref="userDao"/>
+	<property name="sysConfDao" ref="sysConfDao"/>
+	</bean>
+	
+	<bean id="menuService" class="com.demo.service.MenuService" >
+	<property name="menuDao" ref="menuDao"/>
+	</bean>
+	
+	<bean id="tableService" class="com.demo.service.TableService" >
+	<property name="tableDao" ref="tableDao"/>
+	</bean>
+
+	<bean id="orderService" class="com.demo.service.OrderService" >
+	<property name="orderDao" ref="orderDao"/>
+	</bean>
+	
+	<bean id="messageService" class="com.demo.service.MessageService" >
+	<property name="messageDao" ref="messageDao"/>
+	</bean>
+	
+	<!-- 调度任务配置 -->
+	<!-- 配置调度器工厂(SchedulerFactoryBean) -->  
+    <bean name="startQuertz"  
+        class="org.springframework.scheduling.quartz.SchedulerFactoryBean">  
+        <property name="triggers">  
+            <list>  
+                <ref bean="myJobTrigger" />  
+            </list>  
+        </property>  
+        <property name="autoStartup" value="true"/>  
+    </bean>  
+  
+    <!-- 配置Cron触发器(CronTriggerFactoryBean) -->  
+    <bean id="myJobTrigger"  
+        class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">  
+        <property name="jobDetail">  
+            <ref bean="myJobDetail" />  
+        </property>  
+        <property name="cronExpression">  
+            <!-- 每隔15分钟执行一次 -->  
+            <value>0 0/15 * * * ?</value>  
+        </property>  
+    </bean>  
+  
+    <!-- 配置方法调用任务工厂(XXXJobDetailFactoryBean) -->  
+    <bean id="myJobDetail"  
+        class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">  
+        <property name="targetObject">  
+            <ref bean="myJob" />  
+        </property>  
+        <property name="targetMethod">  
+            <value>checkBookingn</value>  
+        </property>  
+    </bean>  
+  
+    <!-- 配置自定义的时间任务(Job) -->  
+    <bean id="myJob" class="com.demo.service.QuartzService" />  
+</beans>

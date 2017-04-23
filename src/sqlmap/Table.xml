@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+"http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="table">
+
+
+	<sql id="AllWhere">
+		<if test="ID != null">  
+	           AND ID = #{ID} 
+	    </if> 
+	    <if test="TYPE != null">  
+	           AND TYPE = #{TYPE} 
+	    </if> 
+	    <if test="TABLE_NAME != null">  
+	           AND TABLE_NAME = #{TABLE_NAME} 
+	    </if> 
+	</sql>
+	<sql id="pageSelect">
+	    <if test="START != null">
+	    	<if test="LIMIT != null">  
+	           LIMIT ${START},${LIMIT}
+	         </if>
+	    </if> 
+	</sql>
+	<insert id="insert" useGeneratedKeys="true" keyProperty="id" >
+	INSERT INTO tb_table
+	(ID,TABLE_DES,COUNT,TABLE_NAME,TYPE)
+	values
+	(null,#{TABLE_DES},#{COUNT},#{TABLE_NAME},#{TYPE})
+	</insert>
+	
+	<delete id="delete">
+	DELETE FROM tb_table WHERE ID=#{ID}
+	</delete>
+	
+	<update id="update">
+		UPDATE tb_table
+		<set>  
+        <if test="TABLE_DES != null">  
+            TABLE_DES = #{TABLE_DES},  
+        </if>  
+        <if test="COUNT != null">  
+            COUNT = #{COUNT},  
+        </if>  
+         <if test="TABLE_NAME != null">  
+            TABLE_NAME = #{TABLE_NAME},  
+        </if>  
+         <if test="TYPE != null">  
+            TYPE = #{TYPE},  
+        </if>  
+    	</set>  
+		WHERE ID = #{ID}
+	</update>
+	
+	<select id="query" resultType="HashMap">
+		SELECT ID,TABLE_DES,COUNT,TABLE_NAME,TYPE
+		FROM tb_table
+		WHERE 1=1
+		<include refid="AllWhere"/>
+		ORDER BY type
+		<include refid="pageSelect"/>
+	</select>
+	<select id="queryCount" resultType="HashMap">
+		SELECT ID
+		FROM tb_table
+		WHERE 1=1
+		<include refid="AllWhere"/>
+	</select>
+	
+	<!-- 查询空余桌子 -->
+	<select id="queryBankTable" resultType="HashMap">
+		<![CDATA[
+		SELECT T.ID,T.TABLE_DES,T.COUNT,T.TABLE_NAME,T.TYPE FROM tb_table T where T.ID NOT IN 
+		(SELECT B.TABLE_ID FROM tb_order B WHERE 
+		ABS((UNIX_TIMESTAMP(#{TIMESTR})-UNIX_TIMESTAMP(B.ORDER_TIME))/60)<60 AND
+		B.STATUS='1'
+		)
+		]]> 
+		 <if test="TYPE != null">  
+         AND T.TYPE = #{TYPE}
+        </if>  
+	</select>
+</mapper>
+
+
